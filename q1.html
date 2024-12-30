@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo List with Categories</title>
+  <style>
+    /* General Styles */
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      font-size: 36px;
+      margin-bottom: 20px;
+    }
+
+    h3 {
+      text-align: center;
+      color: #555;
+      margin: 30px 0;
+      font-size: 24px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Form Styles */
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    input, select, button {
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      transition: all 0.3s ease;
+    }
+
+    input:focus, select:focus, button:hover {
+      border-color: #5b9bd5;
+      outline: none;
+      box-shadow: 0 0 5px rgba(91, 155, 213, 0.6);
+    }
+
+    button {
+      background-color: #5b9bd5;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #4a8bce;
+    }
+
+    /* Todo List Styles */
+    .todo-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f9f9f9;
+      padding: 15px;
+      margin: 12px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .todo-item:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .todo-item span {
+      flex: 1;
+      color: #333;
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .todo-item button {
+      background-color: #ff6b6b;
+      color: white;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .todo-item button:hover {
+      background-color: #ff4c4c;
+    }
+
+    /* Filter & Sort Section */
+    .filter-sort {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .filter-sort select {
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      width: 48%;
+      transition: all 0.3s ease;
+    }
+
+    .filter-sort select:focus {
+      border-color: #5b9bd5;
+    }
+
+    /* Animation */
+    @keyframes slideIn {
+      0% {
+        transform: translateX(-50%);
+        opacity: 0;
+      }
+      100% {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .todo-item {
+      animation: slideIn 0.5s ease-out;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Todo List with Categories</h1>
+    <form id="todoForm">
+      <input type="text" id="todoTitle" placeholder="Todo Title" required />
+      <select id="todoCategory">
+        <option value="Work">Work</option>
+        <option value="Personal">Personal</option>
+        <option value="Other">Other</option>
+      </select>
+      <input type="date" id="todoDueDate" required />
+      <button type="submit">Add Todo</button>
+    </form>
+    <hr>
+
+    <h3>Recently Added</h3>
+
+    <div class="filter-sort">
+      <select id="filterCategory">
+        <option value="All">All Categories</option>
+        <option value="Work">Work</option>
+        <option value="Personal">Personal</option>
+        <option value="Other">Other</option>
+      </select>
+      <select id="sortTodos">
+        <option value="default">Sort by</option>
+        <option value="dueDate">Due Date</option>
+      </select>
+    </div>
+
+    <div id="todoList"></div>
+  </div>
+
+  <script>
+    // LocalStorage-based Todo App
+    const todoForm = document.getElementById("todoForm");
+    const todoTitle = document.getElementById("todoTitle");
+    const todoCategory = document.getElementById("todoCategory");
+    const todoDueDate = document.getElementById("todoDueDate");
+    const todoList = document.getElementById("todoList");
+    const filterCategory = document.getElementById("filterCategory");
+    const sortTodos = document.getElementById("sortTodos");
+
+    let todos = JSON.parse(localStorage.getItem("todos")) || [];
+
+    const renderTodos = () => {
+      const filteredTodos = todos.filter(todo => 
+        filterCategory.value === "All" || todo.category === filterCategory.value
+      );
+
+      const sortedTodos = sortTodos.value === "dueDate"
+        ? filteredTodos.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+        : filteredTodos;
+
+      todoList.innerHTML = sortedTodos.map((todo, index) => `
+        <div class="todo-item">
+          <span>${todo.title} - ${todo.category} (Due: ${todo.dueDate})</span>
+          <button onclick="editTodo(${index})">Edit</button>
+          <button onclick="deleteTodo(${index})">Delete</button>
+        </div>
+      `).join("");
+    };
+
+    const saveTodos = () => {
+      localStorage.setItem("todos", JSON.stringify(todos));
+      renderTodos();
+    };
+
+    todoForm.addEventListener("submit", e => {
+      e.preventDefault();
+      const newTodo = {
+        title: todoTitle.value,
+        category: todoCategory.value,
+        dueDate: todoDueDate.value,
+      };
+      todos.push(newTodo);
+      saveTodos();
+      todoForm.reset();
+    });
+
+    const deleteTodo = (index) => {
+      todos.splice(index, 1);
+      saveTodos();
+    };
+
+    const editTodo = (index) => {
+      const todo = todos[index];
+      todoTitle.value = todo.title;
+      todoCategory.value = todo.category;
+      todoDueDate.value = todo.dueDate;
+      todos.splice(index, 1);
+    };
+
+    filterCategory.addEventListener("change", renderTodos);
+    sortTodos.addEventListener("change", renderTodos);
+
+    renderTodos();
+  </script>
+</body>
+</html>
